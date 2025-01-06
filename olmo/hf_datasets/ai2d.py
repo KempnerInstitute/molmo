@@ -43,7 +43,7 @@ def draw_abc_labels(image_f, annotations, mode="in_box", use_transparent=False):
         draw = ImageDraw(image, "RGB")
 
     # Load the font
-    font_name = "Arial.ttf"
+    font_name = "arial.ttf"
 
     for text_box in annotations["text"].values():
         (x1, y1), (x2, y2) = text_box["rectangle"]
@@ -59,7 +59,8 @@ def draw_abc_labels(image_f, annotations, mode="in_box", use_transparent=False):
             fontsize = get_font_size(image.size)
             x_margin = 12
             y_margin = 10
-            font = ImageFont.truetype(font_name, fontsize)
+            # font = ImageFont.truetype(font_name, fontsize)
+            font = ImageFont.load_default(size = fontsize)
 
             # text top left corner
             xy = (max(x1-x_margin, 0), max(y1-y_margin, 0))
@@ -74,12 +75,14 @@ def draw_abc_labels(image_f, annotations, mode="in_box", use_transparent=False):
         elif mode == "in_box": # cover the box with text
             target_height = y2 - y1
             fontsize = 22
-            font = ImageFont.truetype(font_name, fontsize)
+            # font = ImageFont.truetype(font_name, fontsize)
+            font = ImageFont.load_default(size = fontsize)
             textbox = draw.textbbox((100, 100), letter, font=font)
             if target_height > 4:
                 while textbox[3] - textbox[1] > target_height:
                     fontsize -= 1
-                    font = ImageFont.truetype(font_name, fontsize)
+                    # font = ImageFont.truetype(font_name, fontsize)
+                    font = ImageFont.load_default(size = fontsize)
                     textbox = draw.textbbox((100, 100), letter, font=font)
             cx = (textbox[2] - textbox[0]) / 2
             ry = target_height - (textbox[3] - textbox[1])
@@ -96,8 +99,8 @@ class Ai2dDatasetBuilder(datasets.GeneratorBasedBuilder):
     """
     VERSION = datasets.Version("1.0.0")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, dataset_name="ai2d")
+    def __init__(self, cache_dir, *args, **kwargs):
+        super().__init__(*args, **kwargs, dataset_name="ai2d", cache_dir=cache_dir)
 
     def _info(self):
         return datasets.DatasetInfo(
@@ -123,10 +126,13 @@ class Ai2dDatasetBuilder(datasets.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager: datasets.DownloadManager) -> List[datasets.SplitGenerator]:
         data_src = join(dl_manager.download_and_extract(AI2D_ALL), "ai2d")
+        print(f"Data source: {data_src}")
         ai2d_test_ids = dl_manager.download(AI2D_TEST_IDS)
 
         question_dir = join(data_src, "questions")
+        print(f"Question dir: {question_dir}")
         ans_dir = join(data_src, "annotations")
+        print(f"Annotations dir: {ans_dir}")
         with open(ai2d_test_ids) as f:
             test_ids = [int(x.strip()) for x in f.readlines()]
         assert len(test_ids) == len(set(test_ids))

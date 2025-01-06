@@ -65,7 +65,7 @@ class AOkVqaBuilder(datasets.GeneratorBasedBuilder):
         self.aokvqa_source = aokvqa_source
         os.makedirs(self.aokvqa_source, exist_ok=True)
 
-        super().__init__()
+        super().__init__(cache_dir=self.aokvqa_source)
 
     def _info(self):
         features = datasets.Features(

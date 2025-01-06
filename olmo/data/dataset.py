@@ -91,15 +91,17 @@ class DatasetBase(Dataset):
 
 class HfDataset(Dataset):
     PATH = None
+    SAVE_PATH = None
 
     @classmethod
     def download(cls, n_procs=None):
-        datasets.load_dataset_builder(cls.PATH).download_and_prepare()
+        datasets.load_dataset_builder(cls.PATH).download_and_prepare(join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH))
+        print(f"Downloaded {cls.PATH} to {join(os.environ['MOLMO_DATA_DIR'], cls.SAVE_PATH)}")
 
-    def __init__(self, split: str, keep_in_memory=True, **kwargs):
+    def __init__(self, SAVE_PATH, split: str, keep_in_memory=True, **kwargs):
         self.split = split
         self.dataset = datasets.load_dataset(
-            self.PATH, split=split, keep_in_memory=keep_in_memory, **kwargs)
+            join(os.environ["MOLMO_DATA_DIR"], SAVE_PATH), split=split, keep_in_memory=keep_in_memory, **kwargs)
 
     def __len__(self):
         return len(self.dataset)

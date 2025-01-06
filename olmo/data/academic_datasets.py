@@ -7,6 +7,8 @@ from os.path import join
 
 import datasets
 import numpy as np
+import aiohttp
+import os
 
 from olmo.data.dataset import DATA_HOME, DatasetBase, Dataset, HfDataset
 from olmo.hf_datasets.a_okvqa import AOkVqaBuilder
@@ -46,6 +48,7 @@ class ChartQa(HfDataset):
             Defaults to False.
     """
     PATH = "HuggingFaceM4/ChartQA"
+    SAVE_PATH = "ChartQA"
 
     def __init__(self, split: str, parts="both", weighted=False, keep_in_memory=False):
         assert split in ["train", "validation", "test"]
@@ -56,7 +59,7 @@ class ChartQa(HfDataset):
         self.updated_split = split
         self.weighted = weighted
         self.parts = parts
-        super().__init__(split, keep_in_memory=keep_in_memory)
+        super().__init__("ChartQA", split, keep_in_memory=keep_in_memory)
         if self.parts != "both":
             # Filter out either human or aug datasets
             flags = [int(self.parts == "human")]
@@ -90,7 +93,7 @@ class ChartQa(HfDataset):
 class Vqa2(Dataset):
     @classmethod
     def download(cls, n_procs=1):
-        VQAv2BuilderMultiQA(DOWNLOADS).download_and_prepare()
+        VQAv2BuilderMultiQA(DOWNLOADS).download_and_prepare(storage_options={'client_kwargs': {'timeout': aiohttp.ClientTimeout(total=5000000, connect=1000)}})#output_dir = DOWNLOADS)
 
     def __init__(self, split, multi_question=False):
         assert split in ["train", "validation", "test"]
@@ -134,7 +137,7 @@ class Vqa2(Dataset):
 class AOkVqa(Dataset):
     @classmethod
     def download(cls, n_procs=1):
-        AOkVqaBuilder(DOWNLOADS).download_and_prepare()
+        AOkVqaBuilder(DOWNLOADS).download_and_prepare()#output_dir = DOWNLOADS)
 
     def __init__(self, split, direct_answer=False):
         self.split = split
@@ -194,15 +197,16 @@ class OkVqa(Dataset):
     """
 
     PATH = "HuggingFaceM4/OK-VQA"
+    SAVE_PATH = "OK-VQA"
 
     @classmethod
-    def download(cls, n_procs=1):
-        datasets.load_dataset_builder(cls.PATH, trust_remote_code=True).download_and_prepare()
+    def download(cls, n_procs=1): # cache_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH),
+        datasets.load_dataset_builder(cls.PATH, cache_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH), trust_remote_code=True).download_and_prepare(output_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH), storage_options={'client_kwargs': {'timeout': aiohttp.ClientTimeout(total=5000000, connect=1000)}})
 
     def __init__(self, split: str, multi_question=False, keep_in_memory=False):
         super().__init__()
         self.multi_question = multi_question
-        dataset = datasets.load_dataset(self.PATH, split=split, trust_remote_code=True, keep_in_memory=keep_in_memory)
+        dataset = datasets.load_dataset(join(os.environ["MOLMO_DATA_DIR"], self.SAVE_PATH), split=split, trust_remote_code=True, keep_in_memory=keep_in_memory)
         if self.multi_question:
             grouped_by_image = defaultdict(list)
             for ex in dataset:
@@ -248,13 +252,14 @@ class TextVqa(HfDataset):
     This class loads the TextVQA dataset from HuggingFace (https://huggingface.co/datasets/facebook/textvqa).
     """
     PATH = "facebook/textvqa"
+    SAVE_PATH = "TextVQA"
 
     @classmethod
     def download(cls, n_procs=1):
-        datasets.load_dataset_builder(cls.PATH, trust_remote_code=True).download_and_prepare()
+        datasets.load_dataset_builder(cls.PATH, trust_remote_code=True).download_and_prepare(output_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH))
 
     def __init__(self, split: str, identifier=None, keep_in_memory=False):
-        super().__init__(
+        super().__init__(self.SAVE_PATH,
             split=split, keep_in_memory=keep_in_memory, trust_remote_code=True)
 
     def get(self, item, rng):
@@ -276,11 +281,11 @@ class TallyQa(Dataset):
 
     @classmethod
     def download(cls, n_procs=1):
-        TallyQaBuilder().download_and_prepare()
+        TallyQaBuilder(DOWNLOADS).download_and_prepare(storage_options={'client_kwargs': {'timeout': aiohttp.ClientTimeout(total=50000000000, connect=1000000)}})
 
     def __init__(self, split):
         assert split in ["train", "test"]
-        self.dataset = TallyQaBuilder().as_dataset(split=split)
+        self.dataset = TallyQaBuilder(DOWNLOADS).as_dataset(split=split)
         super().__init__()
 
     def __len__(self):
@@ -307,11 +312,11 @@ class AI2D(Dataset):
 
     @classmethod
     def download(cls, n_procs=1):
-        Ai2dDatasetBuilder().download_and_prepare()
+        Ai2dDatasetBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self, split, boxes="both"):
         assert split in ["train", "validation", "test"]
-        dataset = Ai2dDatasetBuilder().as_dataset(split)
+        dataset = Ai2dDatasetBuilder(DOWNLOADS).as_dataset(split)
         if boxes == "transparent":
             dataset = dataset.filter(lambda x: not x["abc_label"] or x["has_transparent_box"])
         elif boxes == "opaque":
@@ -360,14 +365,15 @@ class ScienceQAImageOnly(Dataset):
     This class loads the ScienceQA dataset from HuggingFace (https://huggingface.co/datasets/derek-thomas/ScienceQA).
     """
     PATH = "derek-thomas/ScienceQA"
+    SAVE_PATH = "ScienceQA"
 
     @classmethod
     def download(self, n_procs=1):
-        datasets.load_dataset_builder(self.PATH).download_and_prepare()
+        datasets.load_dataset_builder(self.PATH, cache_dir = join(os.environ["MOLMO_DATA_DIR"], self.SAVE_PATH), trust_remote_code=True).download_and_prepare(output_dir = join(os.environ["MOLMO_DATA_DIR"], self.SAVE_PATH), storage_options={'client_kwargs': {'timeout': aiohttp.ClientTimeout(total=5000000, connect=1000)}})
 
     def __init__(self, split):
         assert split in ["train", "validation", "test"]
-        self.dataset = datasets.load_dataset(self.PATH, split=split).filter(lambda ex: ex["image"] is not None)
+        self.dataset = datasets.load_dataset(join(os.environ["MOLMO_DATA_DIR"], self.SAVE_PATH), split=split).filter(lambda ex: ex["image"] is not None)
         super().__init__()
 
     def __len__(self):
@@ -443,6 +449,7 @@ class DocQa(HfDataset):
         split (str): Dataset split to load. One of "train", "validation", or "test".
     """
     PATH = "HuggingFaceM4/DocumentVQA"
+    SAVE_PATH = "DocumentVQA"
 
     def get(self, item, rng):
         example = self.dataset[item]
@@ -513,10 +520,10 @@ class CountBenchQa(Dataset):
 
     @classmethod
     def download(self, n_procs=1):
-        CountQaBuilder().download_and_prepare()
+        CountQaBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self):
-        self.dataset = CountQaBuilder().as_dataset("test")
+        self.dataset = CountQaBuilder(DOWNLOADS).as_dataset("test")
 
     def __len__(self):
         return len(self.dataset)
@@ -539,11 +546,11 @@ class TabWMPDirectAnswer(Dataset):
 
     @classmethod
     def download(cls, n_procs=1):
-        TabMwpBuilder().download_and_prepare()
+        TabMwpBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self, split, include_options: bool):
         self.include_options = include_options
-        self._dataset = TabMwpBuilder().as_dataset(split)
+        self._dataset = TabMwpBuilder(DOWNLOADS).as_dataset(split)
 
     def __len__(self):
         return len(self._dataset)
@@ -568,11 +575,11 @@ class FigureQa(Dataset):
 
     @classmethod
     def download(cls, n_procs=1):
-        FigureQaBuilder().download_and_prepare()
+        FigureQaBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self, split, in_memory=False):
         assert split in ["train", "validation1", "test1", "validation2", "test2"]
-        self.hf_dataset = FigureQaBuilder().as_dataset(split, in_memory=in_memory)
+        self.hf_dataset = FigureQaBuilder(DOWNLOADS).as_dataset(split, in_memory=in_memory)
 
     def get(self, item, rng):
         example = self.hf_dataset[int(item)]
@@ -590,11 +597,11 @@ class PlotQa(Dataset):
 
     @classmethod
     def download(cls, n_procs=1):
-        PlotQaBuilder().download_and_prepare()
+        PlotQaBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self, split, in_memory=False):
         assert split in ["train", "validation", "test"]
-        self.hf_dataset = PlotQaBuilder().as_dataset(split, in_memory=in_memory)
+        self.hf_dataset = PlotQaBuilder(DOWNLOADS).as_dataset(split, in_memory=in_memory)
 
     def get(self, item, rng):
         example = self.hf_dataset[int(item)]
@@ -611,11 +618,11 @@ class PlotQa(Dataset):
 class AndroidControl(Dataset):
     @classmethod
     def download(cls, n_procs=1):
-        AndroidControlBuilder().download_and_prepare(num_proc=n_procs)
+        AndroidControlBuilder(DOWNLOADS).download_and_prepare(num_proc=n_procs, storage_options={'client_kwargs': {'timeout': aiohttp.ClientTimeout(total=5000000, connect=1000)}})
 
     def __init__(self, split, mode="all", in_memory=False):
         self.mode = mode
-        self.hf_dataset = AndroidControlBuilder().as_dataset(
+        self.hf_dataset = AndroidControlBuilder(DOWNLOADS).as_dataset(
             "val" if split == "validation" else split, in_memory=in_memory)
 
     def __len__(self):
@@ -672,10 +679,10 @@ class AndroidControl(Dataset):
 class DvQa(Dataset):
     @classmethod
     def download(cls, n_procs=1):
-        DvQaBuilder().download_and_prepare()
+        DvQaBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self, split, in_memory=False):
-        self.hf_dataset = DvQaBuilder().as_dataset(split, in_memory=in_memory)
+        self.hf_dataset = DvQaBuilder(DOWNLOADS).as_dataset(split, in_memory=in_memory)
 
     def __len__(self):
         return len(self.hf_dataset)
@@ -695,9 +702,10 @@ class DvQa(Dataset):
 
 class MathVista(HfDataset):
     PATH = "AI4Math/MathVista"
+    SAVE_PATH = "MathVista"
 
     def __init__(self, split, simplify_question=True, **kwargs):
-        super().__init__(split, **kwargs)
+        super(self.SAVE_PATH).__init__(split, **kwargs)
         self.simplify_question = simplify_question
 
     def get(self, item, rng):
@@ -729,9 +737,10 @@ class MathVista(HfDataset):
 
 class RealWorldQa(HfDataset):
     PATH = "xai-org/RealworldQA"
+    SAVE_PATH = "RealworldQA"
 
     def __init__(self, mode="no_mc_instruction", in_memory=False):
-        super().__init__("test", in_memory)
+        super(self.SAVE_PATH).__init__("test", in_memory)
         self.mode = mode
 
     def get(self, item, rng):
@@ -773,18 +782,20 @@ class MMMU(Dataset):
         'Sociology'
     ]
 
+    SAVE_PATH = "MMMU"
+
     @classmethod
     def download(cls, n_procs=1):
         for name in cls.NAMES:
             if exists(join(DATA_HOME, "mmmu", name)):
                 continue
-            builder = datasets.load_dataset_builder("MMMU/MMMU", name=name)
-            builder.download_and_prepare()
+            builder = datasets.load_dataset_builder("MMMU/MMMU", cache_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH), name=name)
+            builder.download_and_prepare(output_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH), storage_options={'client_kwargs': {'timeout': aiohttp.ClientTimeout(total=5000000, connect=1000)}})
 
     def __init__(self, split: str):
         all_parts = []
         for name in self.NAMES:
-            all_parts.append(datasets.load_dataset("MMMU/MMMU", name=name, split=split))
+            all_parts.append(datasets.load_dataset(join(os.environ["MOLMO_DATA_DIR"], self.SAVE_PATH), name=name, split=split))
         self.data = datasets.concatenate_datasets(all_parts)
 
     def __len__(self):
@@ -814,11 +825,11 @@ class ClockBench(Dataset):
 
     @classmethod
     def download(cls, n_procs=1):
-        ClockBenchBuilder().download_and_prepare()
+        ClockBenchBuilder(DOWNLOADS).download_and_prepare()
 
     def __init__(self, split):
         assert split in ["coco", "openimg", "movies"]
-        dataset = ClockBenchBuilder().as_dataset(split)
+        dataset = ClockBenchBuilder(DOWNLOADS).as_dataset(split)
         self.dataset = dataset
         self.split = split
 

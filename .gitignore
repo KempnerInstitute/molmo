@@ -32,6 +32,8 @@ doc/_build/
 *.swp
 .DS_Store
 
+**/logs/
+
 
 # python
 

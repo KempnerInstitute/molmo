@@ -2,6 +2,7 @@ import logging
 import re
 import shutil
 from os.path import join, exists
+import os
 
 import datasets
 import numpy as np
@@ -118,10 +119,12 @@ class PixMoDocs(Dataset):
         "pixmo_docs_tables": "scifi_table"
     }
 
+    SAVE_PATH = "PixMoDocs"
+
     @classmethod
     def download(cls, n_procs=1):
         for name in ["other", "charts", "diagrams", "tables"]:
-            datasets.load_dataset_builder("allenai/pixmo-docs", name=name).download_and_prepare()
+            datasets.load_dataset_builder("allenai/pixmo-docs", cache_dir = join(os.environ["MOLMO_DATA_DIR"], cls.SAVE_PATH), name=name).download_and_prepare()
 
     def __init__(self, doc_type, split, sample=None, keep_in_memory=False, v1_style=False):
         assert doc_type in ["other", "charts", "diagrams", "tables"]
@@ -129,7 +132,7 @@ class PixMoDocs(Dataset):
         self.doc_type = doc_type
         self.v1_style = v1_style
         self.dataset = datasets.load_dataset(
-            "allenai/pixmo-docs", name=doc_type, split=split, keep_in_memory=keep_in_memory)
+            join(os.environ["MOLMO_DATA_DIR"], self.SAVE_PATH), name=doc_type, split=split, keep_in_memory=keep_in_memory)
 
     def __len__(self):
         return len(self.dataset)

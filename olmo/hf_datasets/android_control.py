@@ -157,8 +157,8 @@ class AndroidControlBuilder(datasets.GeneratorBasedBuilder):
 
     VERSION = datasets.Version("1.0.0")
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs, dataset_name="android_control")
+    def __init__(self, cache_dir, **kwargs):
+        super().__init__(**kwargs, dataset_name="android_control", cache_dir = cache_dir)
 
     def _info(self):
         return datasets.DatasetInfo(

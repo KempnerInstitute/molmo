@@ -20,7 +20,7 @@ ACADEMIC_DATASETS = [
     ChartQa, ScienceQAImageOnly, TextVqa, OkVqa, DocQa,
     InfoQa, AOkVqa, PlotQa, FigureQa, DvQa, SceneTextQa, TabWMPDirectAnswer,
     TallyQa, AI2D, CountBenchQa, RealWorldQa, MathVista, MMMU,
-    Vqa2, AndroidControl
+    Vqa2, AndroidControl, ClockBench
 ]
 
 PIXMO_DATASETS = [

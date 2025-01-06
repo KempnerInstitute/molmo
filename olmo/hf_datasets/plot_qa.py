@@ -10,8 +10,8 @@ class PlotQaBuilder(datasets.GeneratorBasedBuilder):
 
     VERSION = datasets.Version("1.0.0")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, dataset_name="plot_qa")
+    def __init__(self, cache_dir, *args, **kwargs):
+        super().__init__(*args, **kwargs, dataset_name="plot_qa", cache_dir = cache_dir)
 
     def _info(self):
         return datasets.DatasetInfo(
@@ -62,7 +62,8 @@ class PlotQaBuilder(datasets.GeneratorBasedBuilder):
                     answer=str(answer),
                     question_id=q["question_id"],
                 ))
-            with open(join(image_dir, "png", str(image_index) + ".png")) as f:
+            with open(join(image_dir, "png", str(image_index) + ".png"), errors='ignore') as f:
+                #print("file_name", join(image_dir, "png", str(image_index) + ".png"))
                 image_bytes = f.read()
             yield image_index, dict(
                 image=image_bytes,

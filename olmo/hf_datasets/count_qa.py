@@ -19,8 +19,8 @@ class CountQaBuilder(datasets.GeneratorBasedBuilder):
     """
     VERSION = datasets.Version("1.0.0")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, dataset_name="count_qa")
+    def __init__(self, cache_dir, *args, **kwargs):
+        super().__init__(*args, **kwargs, dataset_name="count_qa", cache_dir=cache_dir)
 
     def _info(self):
         return datasets.DatasetInfo(
