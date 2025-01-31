@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=data_test
-#SBATCH --account=kempner_sham_lab
+#SBATCH --account=<account_name>
 #SBATCH -o ./logs/%x_%j.out  # File to which STDOUT will be written, %j inserts jobid
 #SBATCH -e ./logs/%x_%j.err  # File to which STDERR will be written, %j inserts jobid
 #SBATCH --nodes=1              # Total number of nodes
@@ -18,8 +18,13 @@ conda activate molmo_env
 nvidia-smi
 echo $CONDA_PREFIX
 
+export PYTHONPATH=.:${PYTHONPATH}
+
 export MOLMO_DATA_DIR=/n/holylfs06/LABS/kempner_shared/Lab/data/molmo
 
-# export MOLMO_DATA_DIR=/n/holylabs/LABS/sham_lab/Users/mkwun/molmo/data/molmo
 
-python3 download_data.py PixMoCap --n_proc 12
+python3 scripts/download_data.py PixMoCap --n_proc 12
+
+# to download pre-trained models
+#python3 scripts/convert_hf_to_molmo.py qwen2_7b
+#python3 scripts/convert_hf_to_molmo.py openai
